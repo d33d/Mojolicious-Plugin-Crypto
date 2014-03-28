@@ -1,0 +1,535 @@
+package Mojolicious::Plugin::Crypto;
+{
+  $Mojolicious::Plugin::Crypto::VERSION = '0.02';
+}
+
+use Crypt::CBC;
+use Crypt::PRNG;
+
+use Crypt::Cipher;
+use Crypt::Digest::SHA256 qw(sha256 sha256_hex sha256_b64 sha256_b64u
+                             sha256_file sha256_file_hex sha256_file_b64 sha256_file_b64u);
+use Mojo::Util;
+use Mojo::Base 'Mojolicious::Plugin';
+
+#our $VERSION = '0.02';
+#$VERSION = eval $VERSION;
+# feed mime-types:
+our %symmetric_algo = (
+  'aes'      => 'Cipher::AES',
+  'blowfish' => 'Cipher::Blowfish',
+  'des'      => 'Cipher::DES',
+  'idea'     => 'Crypt::IDEA',
+  '3des'     => 'Crypt::Cipher::DES_EDE',
+  'des_ede'  => 'Crypt::Cipher::DES_EDE',
+  'twofish'  => 'Crypt::Cipher::Twofish',
+);
+
+sub register {
+    my ($self, $app, $args) = @_;
+    $args ||= {};
+
+    foreach my $method (qw( _crypt_x _decrypt_x crypt_aes decrypt_aes crypt_blowfish decrypt_blowfish crypt_des decrypt_des 
+      crypt_idea decrypt_idea crypt_3des decrypt_3des crypt_twofish decrypt_twofish crypt_xtea decrypt_xtea 
+      crypt_anubis decrypt_anubis crypt_camellia decrypt_camellia crypt_kasumi decrypt_kasumi crypt_khazad 
+      decrypt_khazad crypt_noekeon decrypt_noekeon crypt_multi2 decrypt_multi2 crypt_rc2 decrypt_rc2 crypt_rc5 
+      decrypt_rc5 crypt_rc6 decrypt_rc6 gen_key gen_iv)) {
+        $app->helper($method => \&{$method});
+    }
+    
+    $self->{aes} = 'Cipher::AES';
+}
+
+### Abstract for Crypt_* and Decrypt_* sub
+sub _crypt_x {
+    my ($self, $algo, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -cipher => $symmetric_algo{$algo})->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub _decrypt_x {
+    my ($self, $algo, $cipher_content, $key) = @_; 
+    return "" unless ($key);
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher =>  $symmetric_algo{$algo})->decrypt($de);
+    return $clear;
+}
+
+## Symetric cipher AES (aka Rijndael), key size: 256 bits
+#sub crypt_aes { return $_[0]->_crypt_x("aes",$_[1], $_[2]); }
+sub decrypt_aes { return $_[0]->_decrypt_x("aes",$_[1], $_[2]); }
+
+
+##  Symetric cipher Blowfish, key size: 448 bits
+sub crypt_blowfish {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Blowfish')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_blowfish {
+    my ($self, $cipher_content, $key) = @_; 
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Blowfish')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_des {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::DES')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_des {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::DES')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_idea {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::IDEA')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_idea {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::IDEA')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_3des {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::DES_EDE')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_3des {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::DES_EDE')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_twofish {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::Twofish')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_twofish {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Twofish')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_xtea {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::XTEA')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_xtea {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::XTEA')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_anubis {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::Anubis')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_anubis {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Anubis')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_camellia {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::Camellia')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_camellia {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Camellia')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_kasumi {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::KASUMI')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_kasumi {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::KASUMI')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_khazad {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::Khazad')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_khazad {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Khazad')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_multi2 {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::MULTI2')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_multi2 {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::MULTI2')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_noekeon {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::Noekeon')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_noekeon {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::Noekeon')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_rc2 {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::RC2')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_rc2 {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::RC2')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_rc5 {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::RC5')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_rc5 {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::RC5')->decrypt($de);
+    return $clear;
+}
+
+sub crypt_rc6 {
+    my ($self, $content, $key) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    $key = pack("H16", $key);
+    my $en  = new Crypt::CBC(-key => $key, -salt => 1, -salt => 1, -cipher => 'Crypt::Cipher::RC6')->encrypt($content);
+    my $enh = unpack('H*', $en);
+    return ($enh, $key);
+}
+
+sub decrypt_rc6 {
+    my ($self, $cipher_content, $key) = @_;
+    return "" unless ($key);
+    $key = pack("H16", $key);;
+    my $de = pack('H*', $cipher_content);
+    my $clear = new Crypt::CBC(-key => $key, -salt => 1, -cipher => 'Crypt::Cipher::RC6')->decrypt($de);
+    return $clear;
+}
+
+
+####### Some Stuff #######
+
+### Generate 256 bit key using sha
+sub gen_key {
+    my ($self, $mode) = @_;
+    ($mode eq "sha256") ? sha256_hex(_prng(100, "alphanum")) : "NONE";
+    ### Todo add more here
+}
+
+### generate intialization vector
+sub gen_iv {
+    my ($self, $byte, $mode) = @_;
+    ($mode eq "prng") ? _prng($byte, ""): "";
+    ### TODO Add here
+}
+
+sub _prng {
+    my ($byte, $mode) = @_;
+    my $prng = "";
+    
+    my $obj_prng = Crypt::PRNG->new;
+
+    if ($mode eq "base64") {
+      $prng = $obj_prng->bytes_b64($byte);
+    }
+    if ($mode eq "hex") {
+      $prng = $obj_prng->bytes_hex($byte);
+    }
+    if ($mode eq "alphanum") {
+      $prng = $obj_prng->string($byte);
+    } else {
+        $prng = $obj_prng->bytes($byte);   
+    }
+
+    return $prng;
+}
+
+
+#################### main pod documentation begin ###################
+## Below is the stub of documentation for your module. 
+
+
+=head1 NAME
+
+Mojolicious::Plugin::Crypto - Provide interface to symmetric cipher algorithms using cipher-block chaining
+
+AES, Blowfish, DES, 3DES, IDEA... and more
+
+=head1 SYNOPSIS
+
+  use Mojolicious::Plugin::Crypt;
+  
+  my $fix_key = 'secretpassphrase';
+  my $plain = "NemuxMojoCrypt";
+
+  #... 
+  # You can leave key value empty and it will generate a new key for you
+
+  my ($crypted, $key)  = $t->app->crypt_aes($plain, $fix_key);
+  
+  #... [ store this crypted data where do you want ... ]
+  
+  # and decrypt it
+  my $clean =  $t->app->decrypt_aes($crypted, $key);
+   
+=head1 DESCRIPTION
+
+You can use this plugin in order to encrypt and decrypt using one of these algorithms: 
+
+AES (aka Rijndal)
+Blowfish
+DES
+DES_EDE (aka Tripple-DES, 3DES)
+IDEA
+TWOFISH
+XTEA
+ANUBIS
+CAMELLIA
+KASUMI
+KHAZAD
+NOEKEON
+MULTI2
+RC2
+RC5
+RC6
+
+=head1 USAGE
+
+=head2 crypt_[ALGO_NAME]() 
+  
+  call function crypt_ followed by the algo name in lowercase. For example crypt_aes("My Plain Test", "ThisIsMySecretKey")
+  ann array will be the return value ('securedata', 'keyused'). 
+
+=head2 decrypt_[ALGO_NAME]()
+  
+  The same thing for decryption decrypt_ followed by the algo name in lowercase
+  Ex.: decrypt_aes("MyCryptedValue","ThisIsMySecretKey") it will return just a scalar value with the plain text. That's all.
+
+=head1 Dummy example using Mojolicious::Lite
+
+  You can test in this way
+  
+  perl mymojoapp.pl /aes/enc?data=nemux
+  perl mymojoapp.pl /aes/dec?data=53616c7465645f5f6355829a809369eee5dfb9489eaee7e190b67d15d2e35ce8
+
+  perl mymojoapp.pl /blowfish/enc?data=nemux
+  perl mymojoapp.pl /blowfish/dec?data=53616c7465645f5f16d8c8aa479121d039b04703083a9391
+
+  #!/usr/bin/env perl
+
+  ### All glory to the Hypnotoad
+
+  use Mojolicious::Lite;
+  plugin 'Crypto';
+
+  my $bigsecret = "MyNameisMarcoRomano";
+
+  get '/aes/enc' => sub {
+    my $self = shift;
+    my $data = $self->param('data');
+    my ($securedata) = $self->crypt_aes($data, $bigsecret);
+    $self->render(text => $securedata);
+  };
+
+  get '/aes/dec' => sub {
+    my $self = shift;
+    my $data = $self->param('data');
+    my ($plaintext) = $self->decrypt_aes($data, $bigsecret);
+    $self->render(text => $plaintext);
+  };
+
+  get '/blowfish/enc' => sub {
+    my $self = shift;
+    my $data = $self->param('data');
+    my ($securedata) = $self->crypt_blowfish($data, $bigsecret);
+    $self->render(text => $securedata);
+  };
+
+  get '/blowfish/dec' => sub {
+    my $self = shift;
+    my $data = $self->param('data');
+    my ($plaintext) = $self->decrypt_blowfish($data, $bigsecret);
+    $self->render(text => $plaintext);
+  };
+
+  app->start;
+
+=head1 BUGS
+
+No bugs for now... but there are more features to add in the future. Probably... 
+I promise that in the next release i will optmize the code... less rows 
+and less cut&paste :) 
+
+=head1 SUPPORT
+
+Write me if you need some help and feel free to improve it. 
+You can find me on irc freenode sometimes. 
+
+=head1 AUTHOR
+
+    Marco Romano
+    CPAN ID: NEMUX
+    Mojolicious CryptO Plugin
+    nemux@cpan.org
+    http://search.cpan.org/~nemux/
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+perl(1).
+
+=cut
+
+#################### main pod documentation end ###################
+
+package UNIVERSAL;
+    use vars qw($AUTOLOAD);
+    sub AUTOLOAD {
+        my ($self, $content, $key) = @_;
+        #print $content . "\n";
+        #print $key . "\n";
+        #print $AUTOLOAD . "\n";
+        my $called = $AUTOLOAD =~ s/.*:://;
+        my ($base, $algo) = $called =~ m/(.*)_(.*)/;
+        return $self->{"_".$base."_x"}->($algo, $content, $key);
+    }
+    sub DESTROY { }
+
+
+1;

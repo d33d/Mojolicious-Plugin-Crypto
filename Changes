@@ -3,3 +3,22 @@ Revision history for Perl extension Mojolicious::Plugin::Crypto.
 0.01  Sun Mar 23 21:31:30 2014
       First release - Added support for AES and Blowfish
 
+0.02  Fri Mar 28 16:56:00 2014
+      - Second release - Code optimization
+      - Added support for 
+      DES 
+      DES_EDE (aka Triple-DES, 3DES)
+      IDEA
+      TWOFISH
+      XTEA
+      ANUBIS
+      CAMELLIA
+      KASUMI
+      KHAZAD
+      NOEKEON
+      MULTI2
+      RC2
+      RC5
+      RC6
+      - Changed return values of decrypt() and crypt() functions in order to make a nested calls
+      

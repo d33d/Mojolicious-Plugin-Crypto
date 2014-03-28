@@ -1,0 +1,7 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/Mojolicious-Plugin-Crypto.t
+lib/Mojolicious/Plugin/Crypto.pm
+examples/lite_example.pl

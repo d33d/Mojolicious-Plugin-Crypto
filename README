@@ -25,10 +25,10 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
- Mojolicious
- Crypt::CBC
- Crypt::OpenSSL::AES
- CryptX 
+ 'Mojolicious' => '4.85'
+ 'Crypt::CBC'  => '2.33' 
+ 'Crypt::IDEA' => '1.10'
+ 'CryptX' => '0.021' 
 
 COPYRIGHT AND LICENCE
 

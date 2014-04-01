@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.02';
+  $Mojolicious::Plugin::Crypto::VERSION = '0.03';
 }
 
 use Crypt::CBC;
@@ -136,40 +136,43 @@ AES, Blowfish, DES, 3DES, IDEA... and more
    
 =head1 DESCRIPTION
 
+=head2 Symmetric algorithms supported 
+
 You can use this plugin in order to encrypt and decrypt using one of these algorithms: 
 
-AES (aka Rijndael)
-Blowfish
-DES
-DES_EDE (aka Triple-DES, 3DES)
-IDEA
-TWOFISH
-XTEA
-ANUBIS
-CAMELLIA
-KASUMI
-KHAZAD
-NOEKEON
-MULTI2
-RC2
-RC5
-RC6
+=over 4
+
+=item * B<AES (aka Rijndael)>
+=item * B<Blowfish>
+=item * B<DES>
+=item * B<DES_EDE (aka Triple-DES, 3DES)>
+=item * B<IDEA>
+=item * B<TWOFISH>
+=item * B<XTEA>
+=item * B<ANUBIS>
+=item * B<CAMELLIA>
+=item * B<KASUMI>
+=item * B<KHAZAD>
+=item * B<NOEKEON>
+=item * B<MULTI2>
+=item * B<RC2>
+=item * B<RC5>
+=item * B<RC6>
 
 =head1 USAGE
 
 =head2 crypt_[ALGO_NAME]() 
   
-  call function crypt_ followed by the algo name in lowercase. For example crypt_aes("My Plain Test", "ThisIsMySecretKey")
-  ann array will be the return value ('securedata', 'keyused'). 
+  call function crypt_ followed by the lowercase algorithms name. For example crypt_aes("My Plain Test", "ThisIsMySecretKey")
+  an array will be the return value with ('securedata', 'keyused'). 
 
 =head2 decrypt_[ALGO_NAME]()
   
-  The same thing for decryption decrypt_ followed by the algo name in lowercase
-  Ex.: decrypt_aes("MyCryptedValue","ThisIsMySecretKey") it will return just a scalar value with the plain text. That's all.
+  The same thing for decryption decrypt_ followed by the algorithms name in lowercase
+  Ex.: decrypt_aes("MyCryptedValue","ThisIsMySecretKey") it will return an array with two values: 
+  the first one is the clear text decrypted and the last one the key used. That's all.
 
-=head2 crypt_des_ede(),crypt_3des(),crypt_tripple_des()... 
-
-=head2 methods list (just to write something)
+=head2 methods list 
 
 crypt_aes()
 crypt_blowfish()
@@ -188,18 +191,31 @@ crypt_rc2();
 crypt_rc5();
 crypt_rc6();
 
-and the same for decrypt functions (please make the effort to put "de" in front of "crypt")
+and the same for decrypt functions (please make the effort to put "de" in front of "crypt_[name]")
 
-=head2 Retrurn value is an array to make easy a super cryptO call like this... :)
+=head2 3DES: Multiple names, same result 
 
-Crypt::
+=over 4
+
+=item 1 L<crypt_des_ede()>
+=item 2 L<crypt_3des()>,
+=item 3 L<crypt_tripple_des()>
+
+=head2 nested calls
+
+=over 4
+
+=item * B<Crypt>
+
+=back 
 
 ($crypted, $key) = app->crypt_xtea(app->crypt_twofish(app->crypt_idea(app->crypt_3des(app->crypt_blowfish(app->crypt_aes($super_plain,$super_secret))))));
 
-Decrypt::
+=item * B<Decrypt>
+
+=back
 
 ($plain, $key) = app->decrypt_aes(app->decrypt_blowfish(app->decrypt_3des(app->decrypt_idea(app->decrypt_twofish(app->decrypt_xtea($crypted,$super_secret))))));
-
 
 =head1 Dummy example using Mojolicious::Lite
 
@@ -213,46 +229,50 @@ Decrypt::
 
   #!/usr/bin/env perl
 
-  ### All glory to the Hypnotoad
+    use Mojolicious::Lite;
+    plugin 'Crypto';
 
-  use Mojolicious::Lite;
-  plugin 'Crypto';
+    my $bigsecret = "MyNameisMarcoRomano";
 
-  my $bigsecret = "MyNameisMarcoRomano";
+    get '/aes/enc' => sub {
+      my $self = shift;
+      my $data = $self->param('data');
+      my ($securedata) = $self->crypt_aes($data, $bigsecret);
+      $self->render(text => $securedata);
+    };
 
-  get '/aes/enc' => sub {
-    my $self = shift;
-    my $data = $self->param('data');
-    my ($securedata) = $self->crypt_aes($data, $bigsecret);
-    $self->render(text => $securedata);
-  };
+    get '/aes/dec' => sub {
+      my $self = shift;
+      my $data = $self->param('data');
+      my ($plaintext) = $self->decrypt_aes($data, $bigsecret);
+      $self->render(text => $plaintext);
+    };
 
-  get '/aes/dec' => sub {
-    my $self = shift;
-    my $data = $self->param('data');
-    my ($plaintext) = $self->decrypt_aes($data, $bigsecret);
-    $self->render(text => $plaintext);
-  };
+    get '/blowfish/enc' => sub {
+      my $self = shift;
+      my $data = $self->param('data');
+      my ($securedata) = $self->crypt_blowfish($data, $bigsecret);
+      $self->render(text => $securedata);
+    };
 
-  get '/blowfish/enc' => sub {
-    my $self = shift;
-    my $data = $self->param('data');
-    my ($securedata) = $self->crypt_blowfish($data, $bigsecret);
-    $self->render(text => $securedata);
-  };
+    get '/blowfish/dec' => sub {
+      my $self = shift;
+      my $data = $self->param('data');
+      my ($plaintext) = $self->decrypt_blowfish($data, $bigsecret);
+      $self->render(text => $plaintext);
+    };
 
-  get '/blowfish/dec' => sub {
-    my $self = shift;
-    my $data = $self->param('data');
-    my ($plaintext) = $self->decrypt_blowfish($data, $bigsecret);
-    $self->render(text => $plaintext);
-  };
-
-  app->start;
+    app->start;
 
 =head1 BUGS
 
-No bugs for now... 
+=head1 TODO
+
+=over 4
+
+=item * Hash functions
+=item * Random numbers generator
+=item * Asymmetric algorithms
 
 =head1 SUPPORT
 

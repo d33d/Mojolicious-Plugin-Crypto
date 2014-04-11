@@ -7,8 +7,22 @@ use Crypt::CBC;
 use Crypt::PRNG;
 
 use Crypt::Cipher;
-use Crypt::Digest::SHA256 qw(sha256 sha256_hex sha256_b64 sha256_b64u
-                             sha256_file sha256_file_hex sha256_file_b64 sha256_file_b64u);
+use Crypt::Digest::SHA256;
+use Crypt::Digest::SHA512;
+use Crypt::Digest::MD5 qw( md5 md5_hex md5_b64 md5_b64u md5_file md5_file_hex md5_file_b64 md5_file_b64u );
+use Crypt::Digest::Whirlpool qw( whirlpool whirlpool_hex whirlpool_b64 whirlpool_b64u whirlpool_file whirlpool_file_hex whirlpool_file_b64 whirlpool_file_b64u );
+use Crypt::Digest::SHA1 qw( sha1 sha1_hex sha1_b64 sha1_b64u sha1_file sha1_file_hex sha1_file_b64 sha1_file_b64u );
+use Crypt::Digest::CHAES qw( chaes chaes_hex chaes_b64 chaes_b64u chaes_file chaes_file_hex chaes_file_b64 chaes_file_b64u );
+use Crypt::Digest::MD2 qw( md2 md2_hex md2_b64 md2_b64u md2_file md2_file_hex md2_file_b64 md2_file_b64u );
+use Crypt::Digest::MD4 qw( md4 md4_hex md4_b64 md4_b64u md4_file md4_file_hex md4_file_b64 md4_file_b64u );
+use Crypt::Digest::RIPEMD128 qw( ripemd128 ripemd128_hex ripemd128_b64 ripemd128_b64u ripemd128_file ripemd128_file_hex ripemd128_file_b64 ripemd128_file_b64u );
+use Crypt::Digest::RIPEMD160 qw( ripemd160 ripemd160_hex ripemd160_b64 ripemd160_b64u ripemd160_file ripemd160_file_hex ripemd160_file_b64 ripemd160_file_b64u );
+use Crypt::Digest::RIPEMD256 qw( ripemd256 ripemd256_hex ripemd256_b64 ripemd256_b64u ripemd256_file ripemd256_file_hex ripemd256_file_b64 ripemd256_file_b64u );
+use Crypt::Digest::RIPEMD320 qw( ripemd320 ripemd320_hex ripemd320_b64 ripemd320_b64u ripemd320_file ripemd320_file_hex ripemd320_file_b64 ripemd320_file_b64u );
+use Crypt::Digest::SHA224 qw( sha224 sha224_hex sha224_b64 sha224_b64u sha224_file sha224_file_hex sha224_file_b64 sha224_file_b64u );
+use Crypt::Digest::SHA384 qw( sha384 sha384_hex sha384_b64 sha384_b64u sha384_file sha384_file_hex sha384_file_b64 sha384_file_b64u );
+use Crypt::Digest::Tiger192 qw( tiger192 tiger192_hex tiger192_b64 tiger192_b64u tiger192_file tiger192_file_hex tiger192_file_b64 tiger192_file_b64u );
+
 use Mojo::Util;
 use Mojo::Base 'Mojolicious::Plugin';
 
@@ -33,6 +47,14 @@ our %symmetric_algo = (
   'rc6'      => 'Crypt::Cipher::RC6',
 );
 
+our @hash_algo = (
+  'Crypt::Digest::SHA256', 'Crypt::Digest::SHA1', 'Crypt::Digest::CHAES',
+  'Crypt::Digest::SHA512','Crypt::Digest::MD5', 'Crypt::Digest::Whirlpool',
+  'Crypt::Digest::RIPEMD320', 'Crypt::Digest::MD2', 'Crypt::Digest::MD4', 
+  'Crypt::Digest::RIPEMD128', 'Crypt::Digest::RIPEMD160', 'Crypt::Digest::RIPEMD256', 
+  'Crypt::Digest::SHA224', 'Crypt::Digest::SHA384', 'Crypt::Digest::Tiger192'
+  );
+
 sub register {
     my ($self, $app, $args) = @_;
     $args ||= {};
@@ -44,6 +66,8 @@ sub register {
       decrypt_rc5 crypt_rc6 decrypt_rc6 gen_key gen_iv)) {
         $app->helper($method => \&{$method});
     }
+
+    map { $app->helper($method => \&{$_}) } map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } map { lm($_) } @hash_algo;
 }
 
 ### Abstract for Crypt_* and Decrypt_* sub
@@ -99,10 +123,18 @@ sub _prng {
     return $prng;
 }
 
+sub lm {
+    my $module = shift;
+    no strict 'refs';
+    return grep { defined &{"$module\::$_"} } keys %{"$module\::"}
+}
+
 use vars qw($AUTOLOAD);
 sub AUTOLOAD {
   my ($self,$c,$k) = @_;
   my $called = $AUTOLOAD =~ s/.*:://r;
+  return $called($c) unless ($called ~~ /^sha.*/);
+
   $called =~ m/(.*)_(.*)/;
   my $func = "_".lc($1)."_x";
   return $self->$func(lc($2),$c,$k);

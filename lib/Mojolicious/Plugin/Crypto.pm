@@ -197,6 +197,8 @@ You can use this plugin in order to encrypt and decrypt using one of these algor
 =item * B<RC5>
 =item * B<RC6>
 
+=back
+
 =head1 USAGE
 
 =head2 crypt_[ALGO_NAME]() 
@@ -239,6 +241,8 @@ and the same for decrypt functions (please make the effort to put "de" in front 
 =item 2 L<crypt_3des()>,
 =item 3 L<crypt_tripple_des()>
 
+=back
+
 =head2 nested calls
 
 =over 4
@@ -248,6 +252,8 @@ and the same for decrypt functions (please make the effort to put "de" in front 
 =back 
 
 ($crypted, $key) = app->crypt_xtea(app->crypt_twofish(app->crypt_idea(app->crypt_3des(app->crypt_blowfish(app->crypt_aes($super_plain,$super_secret))))));
+
+=over 4
 
 =item * B<Decrypt>
 
@@ -276,6 +282,8 @@ Use this plugin in order to calculate digest through this algorithms:
 =item * B<RIPEMD256>
 =item * B<RIPEMD320>
 =item * B<Tiger192>
+
+=back
 
 =head1 USAGE
 
@@ -311,6 +319,7 @@ Example: app->sha256_file_b64();
 
 Example: app->sha256_file_b64u();
 
+=back
 
 =head1 Dummy example using Mojolicious::Lite
 
@@ -372,6 +381,8 @@ Example: app->sha256_file_b64u();
     };
 
     app->start;
+
+=back
 
 =head1 BUGS
 

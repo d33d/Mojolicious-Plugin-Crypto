@@ -199,7 +199,7 @@ You can use this plugin in order to encrypt and decrypt using one of these algor
 
 =back
 
-=head1 USAGE
+=head1 Symmetric Algorithms USAGE
 
 =head2 crypt_[ALGO_NAME]() 
   
@@ -237,9 +237,9 @@ and the same for decrypt functions (please make the effort to put "de" in front 
 
 =over 4
 
-=item 1 L<crypt_des_ede()>
-=item 2 L<crypt_3des()>,
-=item 3 L<crypt_tripple_des()>
+=item 1 B<crypt_des_ede()>
+=item 2 B<crypt_3des()>
+=item 3 B<crypt_tripple_des()>
 
 =back
 
@@ -261,7 +261,9 @@ and the same for decrypt functions (please make the effort to put "de" in front 
 
 ($plain, $key) = app->decrypt_aes(app->decrypt_blowfish(app->decrypt_3des(app->decrypt_idea(app->decrypt_twofish(app->decrypt_xtea($crypted,$super_secret))))));
 
-=head2 Hash/Digest Functions
+=back 
+
+=head1 Hash/Digest Functions
 
 Use this plugin in order to calculate digest through this algorithms:
 
@@ -285,7 +287,7 @@ Use this plugin in order to calculate digest through this algorithms:
 
 =back
 
-=head1 USAGE
+=head1 Hash/Digest Functions USAGE
 
 =head2 [ALGO_NAME]() 
 

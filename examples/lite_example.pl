@@ -13,6 +13,23 @@ my $bigsecret = "MyNameisMarcoRomano";
 # /blowfish/enc?data=nemux
 # /blowfish/dec?data=H8172891729812
 
+# /digest/md5?data=nemux
+# /digest/sha256?data=nemux
+
+get '/digest/sha256' => sub {
+  my $self = shift;
+  my $data = $self->param('data');
+  my $hex_digest = $self->sha256_hex($data);
+  $self->render(text => $hex_digest);
+};
+
+get '/digest/md5' => sub {
+  my $self = shift;
+  my $data = $self->param('data');
+  my ($hex_digest) = $self->md5_hex($data);
+  $self->render(text => $hex_digest);
+};
+
 get '/aes/enc' => sub {
   my $self = shift;
   my $data = $self->param('data');

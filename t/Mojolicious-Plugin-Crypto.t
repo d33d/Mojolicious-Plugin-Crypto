@@ -1,6 +1,6 @@
 use Mojo::Base -strict;
 
-use Test::More tests => 33;
+use Test::More tests => 34;
 use Test::Mojo;
 use Mojo::URL;
 
@@ -25,6 +25,9 @@ my ($crypted, $key)  = $t->app->crypt_aes($plain, $fix_key);
 ok($fix_key eq $key, "AES return KEY expected $fix_key i got $key");
 my ($clean) =  $t->app->decrypt_aes($crypted, $fix_key);
 ok($plain eq $clean, "AES ENC/DEC expected $plain i got $clean");
+
+my ($wrong_clean) =  $t->app->decrypt_aes($crypted, "WrongPassword");
+ok($plain ne $wrong_clean, "AES ENC/DEC expected $plain i got $wrong_clean");
 
 ## BlowFish Test
 $blow_plain = $blow_plain . rndStr 42, 'a'..'z', 0..9;
@@ -134,6 +137,6 @@ my ($clean_super) = $t->app->decrypt_aes($t->app->decrypt_blowfish($t->app->decr
 ok($clean_super eq $super_plain, "MULTI CRYPTO ENC/DEC expected $super_plain i got $clean_super");
 
 
-done_testing(33);
+done_testing(34);
 
 

@@ -21,20 +21,11 @@ To install this module type the following:
    make test
    make install
 
-DEPENDENCIES
-
-This module requires these other modules and libraries:
-
- 'Mojolicious' => '4.85'
- 'Crypt::CBC'  => '2.33' 
- 'Crypt::IDEA' => '1.10'
- 'CryptX' => '0.021' 
-
 COPYRIGHT AND LICENCE
 
 Put the correct copyright and licence information here.
 
-Copyright (C) 2014 by Marco Romano aka nemux
+Copyright (C) 2014 by Marco Romano aka nemux - @nemux_
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.16.2 or,

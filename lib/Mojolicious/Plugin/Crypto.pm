@@ -1,28 +1,27 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.03';
+  $Mojolicious::Plugin::Crypto::VERSION = '0.04';
 }
 
 use Crypt::CBC;
 use Crypt::PRNG;
-
 use Crypt::Cipher;
+use Crypt::Digest::SHA1;
+use Crypt::Digest::SHA224;
 use Crypt::Digest::SHA256;
+use Crypt::Digest::SHA384;
 use Crypt::Digest::SHA512;
-use Crypt::Digest::MD5 qw( md5 md5_hex md5_b64 md5_b64u md5_file md5_file_hex md5_file_b64 md5_file_b64u );
-use Crypt::Digest::Whirlpool qw( whirlpool whirlpool_hex whirlpool_b64 whirlpool_b64u whirlpool_file whirlpool_file_hex whirlpool_file_b64 whirlpool_file_b64u );
-use Crypt::Digest::SHA1 qw( sha1 sha1_hex sha1_b64 sha1_b64u sha1_file sha1_file_hex sha1_file_b64 sha1_file_b64u );
-use Crypt::Digest::CHAES qw( chaes chaes_hex chaes_b64 chaes_b64u chaes_file chaes_file_hex chaes_file_b64 chaes_file_b64u );
-use Crypt::Digest::MD2 qw( md2 md2_hex md2_b64 md2_b64u md2_file md2_file_hex md2_file_b64 md2_file_b64u );
-use Crypt::Digest::MD4 qw( md4 md4_hex md4_b64 md4_b64u md4_file md4_file_hex md4_file_b64 md4_file_b64u );
-use Crypt::Digest::RIPEMD128 qw( ripemd128 ripemd128_hex ripemd128_b64 ripemd128_b64u ripemd128_file ripemd128_file_hex ripemd128_file_b64 ripemd128_file_b64u );
-use Crypt::Digest::RIPEMD160 qw( ripemd160 ripemd160_hex ripemd160_b64 ripemd160_b64u ripemd160_file ripemd160_file_hex ripemd160_file_b64 ripemd160_file_b64u );
-use Crypt::Digest::RIPEMD256 qw( ripemd256 ripemd256_hex ripemd256_b64 ripemd256_b64u ripemd256_file ripemd256_file_hex ripemd256_file_b64 ripemd256_file_b64u );
-use Crypt::Digest::RIPEMD320 qw( ripemd320 ripemd320_hex ripemd320_b64 ripemd320_b64u ripemd320_file ripemd320_file_hex ripemd320_file_b64 ripemd320_file_b64u );
-use Crypt::Digest::SHA224 qw( sha224 sha224_hex sha224_b64 sha224_b64u sha224_file sha224_file_hex sha224_file_b64 sha224_file_b64u );
-use Crypt::Digest::SHA384 qw( sha384 sha384_hex sha384_b64 sha384_b64u sha384_file sha384_file_hex sha384_file_b64 sha384_file_b64u );
-use Crypt::Digest::Tiger192 qw( tiger192 tiger192_hex tiger192_b64 tiger192_b64u tiger192_file tiger192_file_hex tiger192_file_b64 tiger192_file_b64u );
-
+use Crypt::Digest::MD2;
+use Crypt::Digest::MD4;
+use Crypt::Digest::MD5;
+use Crypt::Digest::Whirlpool;
+use Crypt::Digest::CHAES;
+use Crypt::Digest::RIPEMD128;
+use Crypt::Digest::RIPEMD160;
+use Crypt::Digest::RIPEMD256;
+use Crypt::Digest::RIPEMD320;
+use Crypt::Digest::Tiger192;
+ 
 use Mojo::Util;
 use Mojo::Base 'Mojolicious::Plugin';
 
@@ -67,7 +66,7 @@ sub register {
         $app->helper($method => \&{$method});
     }
 
-    map { $app->helper($method => \&{$_}) } map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } map { lm($_) } @hash_algo;
+    map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } map { _lm($_) } @hash_algo;
 }
 
 ### Abstract for Crypt_* and Decrypt_* sub
@@ -92,7 +91,6 @@ sub _decrypt_x {
 sub gen_key {
     my ($self, $mode) = @_;
     ($mode eq "sha256") ? sha256_hex(_prng(100, "alphanum")) : "NONE";
-    ### Todo add more here
 }
 
 ### generate intialization vector
@@ -104,38 +102,32 @@ sub gen_iv {
 
 sub _prng {
     my ($byte, $mode) = @_;
-    my $prng = "";
-    
-    my $obj_prng = Crypt::PRNG->new;
 
-    if ($mode eq "base64") {
-      $prng = $obj_prng->bytes_b64($byte);
-    }
-    if ($mode eq "hex") {
-      $prng = $obj_prng->bytes_hex($byte);
-    }
-    if ($mode eq "alphanum") {
-      $prng = $obj_prng->string($byte);
-    } else {
-        $prng = $obj_prng->bytes($byte);   
-    }
-
-    return $prng;
+    Crypt::PRNG->bytes_b64($byte) unless ($mode ne "base64");
+    Crypt::PRNG->bytes_hex($byte) unless ($mode ne "hex");
+    Crypt::PRNG->string($byte) unless ($mode ne "alphanum");
+    Crypt::PRNG->bytes($byte);   
 }
 
-sub lm {
+sub _lm {
     my $module = shift;
     no strict 'refs';
     return grep { defined &{"$module\::$_"} } keys %{"$module\::"}
+}
+
+sub _d {
+  my ($data, $called) = @_;
+  $called ~~ /^([A-Za-z0-9]+)\_.*/;
+  no strict 'refs';
+  return &{'Crypt::Digest::'.uc($1).'::'.$called}($data);
 }
 
 use vars qw($AUTOLOAD);
 sub AUTOLOAD {
   my ($self,$c,$k) = @_;
   my $called = $AUTOLOAD =~ s/.*:://r;
-  return $called($c) unless ($called ~~ /^sha.*/);
-
-  $called =~ m/(.*)_(.*)/;
+  return _d($c,$called) unless (not $called ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/);
+  $called ~~ m/(.*)_(.*)/;
   my $func = "_".lc($1)."_x";
   return $self->$func(lc($2),$c,$k);
 }
@@ -145,9 +137,7 @@ sub DESTROY { }
 
 =head1 NAME
 
-Mojolicious::Plugin::Crypto - Provide interface to symmetric cipher algorithms using cipher-block chaining
-
-AES, Blowfish, DES, 3DES, IDEA... and more
+Mojolicious::Plugin::Crypto - Provide interface to some cryptographic stuff.
 
 =head1 SYNOPSIS
 
@@ -156,7 +146,7 @@ AES, Blowfish, DES, 3DES, IDEA... and more
   my $fix_key = 'secretpassphrase';
   my $plain = "NemuxMojoCrypt";
 
-  #... 
+  #### Symmetric Functions
   # You can leave key value empty and it will generate a new key for you
 
   my ($crypted, $key)  = $t->app->crypt_aes($plain, $fix_key);
@@ -166,7 +156,23 @@ AES, Blowfish, DES, 3DES, IDEA... and more
   # and decrypt it
   my $clean =  $t->app->decrypt_aes($crypted, $key);
    
+  ### Hash
+
+  ### From string/buffer
+  my $digest_hex = $t->app->sha256_hex("Take this content");
+  ### From filehandle
+  my $digest_raw = $t->app->sha256_file(*FILEHANDLE);
+  ### From File
+  $digest_hex    = $t->app->sha256_file_hex('filename.txt');
+
+  ### base64
+  my $digest_b64  = $t->app->sha256_b64('data string');
+  my $digest_b64u = $t->app->sha256_b64u('data string');
+
 =head1 DESCRIPTION
+
+Support some cryptographic functions like symmetric cipher algorithms using cipher-block chaining. AES, Blowfish, DES, 3DES, IDEA... and more, see below.
+Hash/Digest Functions - SHA*, MD*, Whirlpool, CHAES, RIPEMD*, Tiger192
 
 =head2 Symmetric algorithms supported 
 
@@ -249,6 +255,63 @@ and the same for decrypt functions (please make the effort to put "de" in front 
 
 ($plain, $key) = app->decrypt_aes(app->decrypt_blowfish(app->decrypt_3des(app->decrypt_idea(app->decrypt_twofish(app->decrypt_xtea($crypted,$super_secret))))));
 
+=head2 Hash/Digest Functions
+
+Use this plugin in order to calculate digest through this algorithms:
+
+=over 4
+
+=item * B<SHA1>
+=item * B<SHA224>
+=item * B<SHA256>
+=item * B<SHA384>
+=item * B<SHA512>
+=item * B<MD2>
+=item * B<MD4>
+=item * B<MD5>
+=item * B<Whirlpool>
+=item * B<CHAES>
+=item * B<RIPEMD128>
+=item * B<RIPEMD160>
+=item * B<RIPEMD256>
+=item * B<RIPEMD320>
+=item * B<Tiger192>
+
+=head1 USAGE
+
+=head2 [ALGO_NAME]() 
+
+Example: app->sha256();
+
+=head2 [ALGO_NAME]_hex() 
+
+Example: app->sha256_hex();
+
+=head2 [ALGO_NAME]_b64() 
+
+Example: app->sha256_b64();
+
+=head2 [ALGO_NAME]_b64u()
+
+Example: app->sha256_b64u();
+
+=head2 [ALGO_NAME]_file([FILENAME|FILEHANDLE])
+
+Example: app->sha256_file();
+
+=head2 [ALGO_NAME]_file_hex([FILENAME|FILEHANDLE]) 
+
+Example: app->sha256_file_hex();
+
+=head2 [ALGO_NAME]_file_b64([FILENAME|FILEHANDLE]) 
+
+Example: app->sha256_file_b64();
+
+=head2 [ALGO_NAME]_file_b64u([FILENAME|FILEHANDLE])
+
+Example: app->sha256_file_b64u();
+
+
 =head1 Dummy example using Mojolicious::Lite
 
   You can test in this way
@@ -265,6 +328,20 @@ and the same for decrypt functions (please make the effort to put "de" in front 
     plugin 'Crypto';
 
     my $bigsecret = "MyNameisMarcoRomano";
+
+    get '/digest/sha256' => sub {
+      my $self = shift;
+      my $data = $self->param('data');
+      my $hex_digest = $self->sha256_hex($data);
+      $self->render(text => $hex_digest);
+    };
+
+    get '/digest/md5' => sub {
+      my $self = shift;
+      my $data = $self->param('data');
+      my ($hex_digest) = $self->md5_hex($data);
+      $self->render(text => $hex_digest);
+    };
 
     get '/aes/enc' => sub {
       my $self = shift;
@@ -302,21 +379,25 @@ and the same for decrypt functions (please make the effort to put "de" in front 
 
 =over 4
 
-=item * Hash functions
 =item * Random numbers generator
 =item * Asymmetric algorithms
+=item * Avoiding to load all modules but just what you need
 
 =head1 SUPPORT
 
 Write me if you need some help and feel free to improve it. 
 You can find me on irc freenode sometimes. 
 
+Github: http://git.io/lQl5cA
+
 =head1 AUTHOR
 
     Marco Romano
     CPAN ID: NEMUX
     Mojolicious CryptO Plugin
-    nemux@cpan.org
+    
+    nemux@cpan.org - @nemux_ 
+
     http://search.cpan.org/~nemux/
 
 =head1 COPYRIGHT

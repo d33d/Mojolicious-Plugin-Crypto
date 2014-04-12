@@ -3,5 +3,7 @@ Makefile.PL
 MANIFEST
 README
 t/Mojolicious-Plugin-Crypto.t
+t/Mojolicious-Plugin-Crypto-HASH.t
+t/listofmypassword.txt
 lib/Mojolicious/Plugin/Crypto.pm
 examples/lite_example.pl

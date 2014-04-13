@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.06';
+  $Mojolicious::Plugin::Crypto::VERSION = '0.07';
 }
 
 use Crypt::CBC;
@@ -21,7 +21,9 @@ use Crypt::Digest::RIPEMD160;
 use Crypt::Digest::RIPEMD256;
 use Crypt::Digest::RIPEMD320;
 use Crypt::Digest::Tiger192;
- 
+use Crypt::Mac::HMAC;
+use Crypt::PK::RSA; 
+
 use Mojo::Util;
 use Mojo::Base 'Mojolicious::Plugin';
 
@@ -67,6 +69,8 @@ sub register {
     }
 
     map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } map { _lm($_) } @hash_algo;
+    map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^hmac.*/ ? $_ : () } _lm('Crypt::Mac::HMAC');
+
 }
 
 ### Abstract for Crypt_* and Decrypt_* sub
@@ -116,17 +120,25 @@ sub _lm {
 }
 
 sub _d {
-  my ($data, $called) = @_;
+  my ($called, $data) = @_;
   $called =~ /^([A-Za-z0-9]+)\_.*/;
   no strict 'refs';
   return &{'Crypt::Digest::'.uc($1).'::'.$called}($data);
 }
 
+sub _h {
+  my ($hash_name,$key,$called,@other) = @_;
+  $called =~ /^([A-Za-z0-9]+)\_.*/;
+  no strict 'refs';
+  return &{'Crypt::Mac::HMAC::'.$called}($hash_name, $key, @other);
+}
+
 use vars qw($AUTOLOAD);
 sub AUTOLOAD {
-  my ($self,$c,$k) = @_;
+  my ($self,$c,$k,@other) = @_;
   my $called = $AUTOLOAD =~ s/.*:://r;
-  return _d($c,$called) unless ($called !~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/);
+  return _d($called,$c) unless ($called !~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/);
+  return _h($c,$k,$called,@other) unless ($called !~ /^hmac.*/);
   $called =~ m/(.*)_(.*)/;
   my $func = "_".lc($1)."_x";
   return $self->$func(lc($2),$c,$k);
@@ -171,8 +183,21 @@ Mojolicious::Plugin::Crypto - Provide interface to some cryptographic stuff.
 
 =head1 DESCRIPTION
 
-Support some cryptographic functions like symmetric cipher algorithms using cipher-block chaining. AES, Blowfish, DES, 3DES, IDEA... and more, see below.
-Hash/Digest Functions - SHA*, MD*, Whirlpool, CHAES, RIPEMD*, Tiger192
+=over
+
+=item * 
+
+Symmetric cipher algorithms using cipher-block chaining. AES, Blowfish, DES, 3DES, IDEA... and more, see below.
+
+=item *
+
+Hash/Digest Functions - SHA*, MD*, Whirlpool, CHAES, RIPEMD*, Tiger192.
+
+=item *
+
+HMAC message authentication code (MAC) algorithm.
+
+=back
 
 =head2 Symmetric algorithms supported 
 
@@ -422,6 +447,26 @@ Example: app->sha256_file_b64();
 =head2 [ALGO_NAME]_file_b64u([FILENAME|FILEHANDLE])
 
 Example: app->sha256_file_b64u();
+
+=head1 HMAC - Message authentication code HMAC
+
+Use this plugin in order to calculate HMAC:
+
+=head2 hmac([HASHNAME], [KEY], 'data buffer');
+
+Example: app->hmac('SHA256', $key, 'data buffer');
+
+=head2 hmac_hex([HASHNAME], [KEY], 'data buffer');
+
+Example: app->hmac_hex('SHA256', $key, 'data buffer');
+
+=head2 hmac_b64([HASHNAME], [KEY], 'data buffer');
+
+Example: app->hmac_b64('SHA256', $key, 'data buffer');
+
+=head2 hmac_b64u([HASHNAME], [KEY], 'data buffer');
+
+Example: app->hmac_b64u('SHA256', $key, 'data buffer');
 
 =head1 Dummy example using Mojolicious::Lite
 

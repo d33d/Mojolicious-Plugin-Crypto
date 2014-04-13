@@ -29,4 +29,11 @@ Revision history for Perl extension Mojolicious::Plugin::Crypto.
       - Add Hash/Digest functions support
 
 0.05 First Clean and Stable release
+
+0.06 Sun Apr 13 17:41:00 2014
+      - Cpan testers bug fixes, test script and use of smart match
+
+
+
+
       

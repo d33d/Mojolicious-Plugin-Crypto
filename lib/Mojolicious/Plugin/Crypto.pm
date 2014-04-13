@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.05';
+  $Mojolicious::Plugin::Crypto::VERSION = '0.06';
 }
 
 use Crypt::CBC;
@@ -117,7 +117,7 @@ sub _lm {
 
 sub _d {
   my ($data, $called) = @_;
-  $called ~~ /^([A-Za-z0-9]+)\_.*/;
+  $called =~ /^([A-Za-z0-9]+)\_.*/;
   no strict 'refs';
   return &{'Crypt::Digest::'.uc($1).'::'.$called}($data);
 }
@@ -126,8 +126,8 @@ use vars qw($AUTOLOAD);
 sub AUTOLOAD {
   my ($self,$c,$k) = @_;
   my $called = $AUTOLOAD =~ s/.*:://r;
-  return _d($c,$called) unless (not $called ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/);
-  $called ~~ m/(.*)_(.*)/;
+  return _d($c,$called) unless ($called !~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/);
+  $called =~ m/(.*)_(.*)/;
   my $func = "_".lc($1)."_x";
   return $self->$func(lc($2),$c,$k);
 }

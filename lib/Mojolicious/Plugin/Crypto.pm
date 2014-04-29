@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.07';
+  $Mojolicious::Plugin::Crypto::VERSION = '0.08';
 }
 
 use Crypt::CBC;
@@ -128,7 +128,6 @@ sub _d {
 
 sub _h {
   my ($hash_name,$key,$called,@other) = @_;
-  $called =~ /^([A-Za-z0-9]+)\_.*/;
   no strict 'refs';
   return &{'Crypt::Mac::HMAC::'.$called}($hash_name, $key, @other);
 }

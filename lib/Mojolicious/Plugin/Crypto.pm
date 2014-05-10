@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.09';
+    $Mojolicious::Plugin::Crypto::VERSION = '0.09';
 }
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::Util;
@@ -10,140 +10,158 @@ use Crypt::PRNG;
 use Crypt::Cipher;
 
 our %symmetric_algo = (
-  'aes'      => 'Cipher::AES',
-  'blowfish' => 'Cipher::Blowfish',
-  'des'      => 'Cipher::DES',
-  'idea'     => 'Crypt::IDEA',
-  '3des'     => 'Crypt::Cipher::DES_EDE',
-  'triple_des' => 'Crypt::Cipher::DES_EDE',
-  'des_ede'  => 'Crypt::Cipher::DES_EDE',
-  'twofish'  => 'Crypt::Cipher::Twofish',
-  'xtea'     => 'Crypt::Cipher::XTEA',
-  'anubis'   => 'Crypt::Cipher::Anubis',
-  'camellia' => 'Crypt::Cipher::Camellia',
-  'kasumi'   => 'Crypt::Cipher::KASUMI',
-  'khazad'   => 'Crypt::Cipher::Khazad',
-  'multi2'   => 'Crypt::Cipher::MULTI2',
-  'noekeon'  => 'Crypt::Cipher::Noekeon',
-  'rc2'      => 'Crypt::Cipher::RC2',
-  'rc5'      => 'Crypt::Cipher::RC5',
-  'rc6'      => 'Crypt::Cipher::RC6',
+    'aes'        => 'Cipher::AES',
+    'blowfish'   => 'Cipher::Blowfish',
+    'des'        => 'Cipher::DES',
+    'idea'       => 'Crypt::IDEA',
+    '3des'       => 'Crypt::Cipher::DES_EDE',
+    'triple_des' => 'Crypt::Cipher::DES_EDE',
+    'des_ede'    => 'Crypt::Cipher::DES_EDE',
+    'twofish'    => 'Crypt::Cipher::Twofish',
+    'xtea'       => 'Crypt::Cipher::XTEA',
+    'anubis'     => 'Crypt::Cipher::Anubis',
+    'camellia'   => 'Crypt::Cipher::Camellia',
+    'kasumi'     => 'Crypt::Cipher::KASUMI',
+    'khazad'     => 'Crypt::Cipher::Khazad',
+    'multi2'     => 'Crypt::Cipher::MULTI2',
+    'noekeon'    => 'Crypt::Cipher::Noekeon',
+    'rc2'        => 'Crypt::Cipher::RC2',
+    'rc5'        => 'Crypt::Cipher::RC5',
+    'rc6'        => 'Crypt::Cipher::RC6',
 );
 
 sub register {
-    my ($self, $app, $args) = @_;
+    my ( $self, $app, $args ) = @_;
     $args ||= {};
 
     my $loader = Mojo::Loader->new;
-    
-    if ($args->{symmetric_cipher} || !%{$args}) {
-      for my $module (@{$loader->search('Crypt::Cipher')}) {
-        my $e = $loader->load($module);
-        warn qq{Loading "$module" failed: $e} and next if ref $e;
-      }
-      
-      foreach my $method (qw( _crypt_x _decrypt_x crypt_aes decrypt_aes crypt_blowfish decrypt_blowfish crypt_des decrypt_des 
-      crypt_idea decrypt_idea crypt_3des decrypt_3des crypt_twofish decrypt_twofish crypt_xtea decrypt_xtea 
-      crypt_anubis decrypt_anubis crypt_camellia decrypt_camellia crypt_kasumi decrypt_kasumi crypt_khazad 
-      decrypt_khazad crypt_noekeon decrypt_noekeon crypt_multi2 decrypt_multi2 crypt_rc2 decrypt_rc2 crypt_rc5 
-      decrypt_rc5 crypt_rc6 decrypt_rc6 gen_key gen_iv)) {
-        $app->helper($method => \&{$method});
-      }
-    }
 
-    if ($args->{digest} || !%{$args}) {
-      for my $module (@{$loader->search('Crypt::Digest')}) {
-        my $e = $loader->load($module);
-        
-        if (ref $e) {
-          warn qq{Loading "$module" failed: $e} and next;
+    if ( $args->{symmetric_cipher} || !%{$args} ) {
+        for my $module ( @{ $loader->search('Crypt::Cipher') } ) {
+            my $e = $loader->load($module);
+            warn qq{Loading "$module" failed: $e} and next if ref $e;
         }
 
-        map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } _lm($module);
-
-      }
+        foreach my $method (
+            qw( _crypt_x _decrypt_x crypt_aes decrypt_aes crypt_blowfish decrypt_blowfish crypt_des decrypt_des
+            crypt_idea decrypt_idea crypt_3des decrypt_3des crypt_twofish decrypt_twofish crypt_xtea decrypt_xtea
+            crypt_anubis decrypt_anubis crypt_camellia decrypt_camellia crypt_kasumi decrypt_kasumi crypt_khazad
+            decrypt_khazad crypt_noekeon decrypt_noekeon crypt_multi2 decrypt_multi2 crypt_rc2 decrypt_rc2 crypt_rc5
+            decrypt_rc5 crypt_rc6 decrypt_rc6 gen_key gen_iv)
+          )
+        {
+            $app->helper( $method => \&{$method} );
+        }
     }
 
-    if ($args->{mac} || !%{$args}) {
-       for my $module (@{$loader->search('Crypt::Mac')}) {
-        my $e = $loader->load($module);
-        
-        if (ref $e) {
-          warn qq{Loading "$module" failed: $e} and next;
-        }
+    if ( $args->{digest} || !%{$args} ) {
+        for my $module ( @{ $loader->search('Crypt::Digest') } ) {
+            my $e = $loader->load($module);
 
-        map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^hmac.*/ ? $_ : () } _lm($module);
-      
-      }
+            if ( ref $e ) {
+                warn qq{Loading "$module" failed: $e} and next;
+            }
+
+            map { $app->helper( $_ => \&{$_} ) } map {
+                    $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/
+                  ? $_
+                  : ()
+            } _lm($module);
+
+        }
+    }
+
+    if ( $args->{mac} || !%{$args} ) {
+        for my $module ( @{ $loader->search('Crypt::Mac') } ) {
+            my $e = $loader->load($module);
+
+            if ( ref $e ) {
+                warn qq{Loading "$module" failed: $e} and next;
+            }
+
+            map { $app->helper( $_ => \&{$_} ) }
+              map { $_ ~~ /^hmac.*/ ? $_ : () } _lm($module);
+
+        }
     }
 
 }
 
 sub _crypt_x {
-    my ($self, $algo, $content, $key) = @_;
-    $key  = $self->gen_key("sha256") unless ($key);
-    my $keypack = pack("H16", $key);
-    my $en  = new Crypt::CBC(-key => $keypack, -salt => 1, -cipher => $symmetric_algo{$algo})->encrypt($content);
-    my $enh = unpack('H*', $en);
-    return ($enh, $key);
+    my ( $self, $algo, $content, $key ) = @_;
+    $key = $self->gen_key("sha256") unless ($key);
+    my $keypack = pack( "H16", $key );
+    my $en = new Crypt::CBC(
+        -key    => $keypack,
+        -salt   => 1,
+        -cipher => $symmetric_algo{$algo}
+    )->encrypt($content);
+    my $enh = unpack( 'H*', $en );
+    return ( $enh, $key );
 }
 
 sub _decrypt_x {
-    my ($self, $algo, $cipher_content, $key) = @_; 
+    my ( $self, $algo, $cipher_content, $key ) = @_;
     return "" unless ($key);
-    my $keypack = pack("H16", $key);
-    my $de    = pack('H*', $cipher_content);
-    my $clear = new Crypt::CBC(-key => $keypack, -salt => 1, -cipher =>  $symmetric_algo{$algo})->decrypt($de);
-    return ($clear, $key);
+    my $keypack = pack( "H16", $key );
+    my $de      = pack( 'H*',  $cipher_content );
+    my $clear   = new Crypt::CBC(
+        -key    => $keypack,
+        -salt   => 1,
+        -cipher => $symmetric_algo{$algo}
+    )->decrypt($de);
+    return ( $clear, $key );
 }
 
 sub gen_key {
-    my ($self, $mode) = @_;
-    ($mode eq "sha256") ? sha256_hex(_prng(100, "alphanum")) : "NONE";
+    my ( $self, $mode ) = @_;
+    ( $mode eq "sha256" ) ? sha256_hex( _prng( 100, "alphanum" ) ) : "NONE";
 }
 
 sub gen_iv {
-    my ($self, $byte, $mode) = @_;
-    ($mode eq "prng") ? _prng($byte, ""): "";
+    my ( $self, $byte, $mode ) = @_;
+    ( $mode eq "prng" ) ? _prng( $byte, "" ) : "";
 }
 
 sub _prng {
-    my ($byte, $mode) = @_;
+    my ( $byte, $mode ) = @_;
 
-    Crypt::PRNG->bytes_b64($byte) unless ($mode ne "base64");
-    Crypt::PRNG->bytes_hex($byte) unless ($mode ne "hex");
-    Crypt::PRNG->string($byte) unless ($mode ne "alphanum");
-    Crypt::PRNG->bytes($byte);   
+    Crypt::PRNG->bytes_b64($byte) unless ( $mode ne "base64" );
+    Crypt::PRNG->bytes_hex($byte) unless ( $mode ne "hex" );
+    Crypt::PRNG->string($byte)    unless ( $mode ne "alphanum" );
+    Crypt::PRNG->bytes($byte);
 }
 
 sub _lm {
     my $module = shift;
     no strict 'refs';
-    return grep { defined &{"$module\::$_"} } keys %{"$module\::"}
+    return grep { defined &{"$module\::$_"} } keys %{"$module\::"};
 }
 
 sub _d {
-  my ($called, $data) = @_;
-  $called =~ /^([A-Za-z0-9]+)\_.*/;
-  no strict 'refs';
-  return &{'Crypt::Digest::'.uc($1).'::'.$called}($data);
+    my ( $called, $data ) = @_;
+    $called =~ /^([A-Za-z0-9]+)\_.*/;
+    no strict 'refs';
+    return &{ 'Crypt::Digest::' . uc($1) . '::' . $called }($data);
 }
 
 sub _h {
-  my ($hash_name,$key,$called,@other) = @_;
-  no strict 'refs';
-  return &{'Crypt::Mac::HMAC::'.$called}($hash_name, $key, @other);
+    my ( $hash_name, $key, $called, @other ) = @_;
+    no strict 'refs';
+    return &{ 'Crypt::Mac::HMAC::' . $called }( $hash_name, $key, @other );
 }
 
 use vars qw($AUTOLOAD);
+
 sub AUTOLOAD {
-  my ($self,$c,$k,@other) = @_;
-  my $called = $AUTOLOAD =~ s/.*:://r;
-  return _d($called,$c) unless ($called !~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/);
-  return _h($c,$k,$called,@other) unless ($called !~ /^hmac.*/);
-  $called =~ m/(.*)_(.*)/;
-  my $func = "_".lc($1)."_x";
-  return $self->$func(lc($2),$c,$k);
+    my ( $self, $c, $k, @other ) = @_;
+    my $called = $AUTOLOAD =~ s/.*:://r;
+    return _d( $called, $c )
+      unless ( $called !~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ );
+    return _h( $c, $k, $called, @other ) unless ( $called !~ /^hmac.*/ );
+    $called =~ m/(.*)_(.*)/;
+    my $func = "_" . lc($1) . "_x";
+    return $self->$func( lc($2), $c, $k );
 }
 sub DESTROY { }
 
@@ -585,6 +603,5 @@ perl(1). L<CryptX>
 =cut
 
 #################### main pod documentation end ###################
-
 
 1;

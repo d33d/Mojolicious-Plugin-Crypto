@@ -6,11 +6,10 @@ WriteMakefile(
     NAME              => 'Mojolicious::Plugin::Crypto',
     VERSION_FROM      => 'lib/Mojolicious/Plugin/Crypto.pm', # finds $VERSION
     PREREQ_PM         => {
-    'Mojolicious' => '4.85',
 	'Crypt::CBC'  => '2.33', 
-    'Crypt::IDEA'         => '1.10',
-	'CryptX' => '0.021'}, 
+	'CryptX'      => '0.021'
+    }, 
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-     (ABSTRACT        => 'Provide interface to various cipher algorithms - Symmetric algo added AES and Blowfish', 
+     (ABSTRACT        => 'Provide interface to various cipher algorithms', 
        AUTHOR         => 'Marco Romano <nemux@cpan.org>') : ()),
 );

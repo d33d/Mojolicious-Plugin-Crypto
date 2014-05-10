@@ -10,7 +10,9 @@ BEGIN { use_ok('Mojolicious::Plugin::Crypto') };
 
 sub rndStr{ join'', @_[ map{ rand @_ } 1 .. shift ] }
 
-plugin 'crypto', {};
+plugin 'crypto', { 
+       digest => 1 
+};
 
 my $t = Test::Mojo->new(app);
 

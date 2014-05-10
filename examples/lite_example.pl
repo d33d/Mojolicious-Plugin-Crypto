@@ -1,8 +1,11 @@
 #!/usr/bin/env perl
-
-### DUMMY example below and... All the glory to Hypnotoad
 use Mojolicious::Lite;
-plugin 'Crypto';
+
+plugin 'Crypto', {
+  symmetric_cipher => 1,
+  digest           => 1,
+  mac              => 1,
+};
 
 my $bigsecret = "MyNameisMarcoRomano";
 my $hmac_key  = "SECRETOK";

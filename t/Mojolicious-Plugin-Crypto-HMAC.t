@@ -8,7 +8,9 @@ use Mojolicious::Lite;
 
 BEGIN { use_ok('Mojolicious::Plugin::Crypto') };
 
-plugin 'crypto', {};
+plugin 'crypto', { 
+       mac => 1
+};
 
 my $t = Test::Mojo->new(app);
 my $key = "BIGSecret";

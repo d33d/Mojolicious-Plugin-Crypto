@@ -1,31 +1,13 @@
 package Mojolicious::Plugin::Crypto;
 {
-  $Mojolicious::Plugin::Crypto::VERSION = '0.08';
+  $Mojolicious::Plugin::Crypto::VERSION = '0.09';
 }
-
+use Mojo::Base 'Mojolicious::Plugin';
+use Mojo::Util;
+use Mojo::Loader;
 use Crypt::CBC;
 use Crypt::PRNG;
 use Crypt::Cipher;
-use Crypt::Digest::SHA1;
-use Crypt::Digest::SHA224;
-use Crypt::Digest::SHA256;
-use Crypt::Digest::SHA384;
-use Crypt::Digest::SHA512;
-use Crypt::Digest::MD2;
-use Crypt::Digest::MD4;
-use Crypt::Digest::MD5;
-use Crypt::Digest::Whirlpool;
-use Crypt::Digest::CHAES;
-use Crypt::Digest::RIPEMD128;
-use Crypt::Digest::RIPEMD160;
-use Crypt::Digest::RIPEMD256;
-use Crypt::Digest::RIPEMD320;
-use Crypt::Digest::Tiger192;
-use Crypt::Mac::HMAC;
-use Crypt::PK::RSA; 
-
-use Mojo::Util;
-use Mojo::Base 'Mojolicious::Plugin';
 
 our %symmetric_algo = (
   'aes'      => 'Cipher::AES',
@@ -48,32 +30,55 @@ our %symmetric_algo = (
   'rc6'      => 'Crypt::Cipher::RC6',
 );
 
-our @hash_algo = (
-  'Crypt::Digest::SHA256', 'Crypt::Digest::SHA1', 'Crypt::Digest::CHAES',
-  'Crypt::Digest::SHA512','Crypt::Digest::MD5', 'Crypt::Digest::Whirlpool',
-  'Crypt::Digest::RIPEMD320', 'Crypt::Digest::MD2', 'Crypt::Digest::MD4', 
-  'Crypt::Digest::RIPEMD128', 'Crypt::Digest::RIPEMD160', 'Crypt::Digest::RIPEMD256', 
-  'Crypt::Digest::SHA224', 'Crypt::Digest::SHA384', 'Crypt::Digest::Tiger192'
-  );
-
 sub register {
     my ($self, $app, $args) = @_;
     $args ||= {};
 
-    foreach my $method (qw( _crypt_x _decrypt_x crypt_aes decrypt_aes crypt_blowfish decrypt_blowfish crypt_des decrypt_des 
+    my $loader = Mojo::Loader->new;
+    
+    if ($args->{symmetric_cipher} || !%{$args}) {
+      for my $module (@{$loader->search('Crypt::Cipher')}) {
+        my $e = $loader->load($module);
+        warn qq{Loading "$module" failed: $e} and next if ref $e;
+      }
+      
+      foreach my $method (qw( _crypt_x _decrypt_x crypt_aes decrypt_aes crypt_blowfish decrypt_blowfish crypt_des decrypt_des 
       crypt_idea decrypt_idea crypt_3des decrypt_3des crypt_twofish decrypt_twofish crypt_xtea decrypt_xtea 
       crypt_anubis decrypt_anubis crypt_camellia decrypt_camellia crypt_kasumi decrypt_kasumi crypt_khazad 
       decrypt_khazad crypt_noekeon decrypt_noekeon crypt_multi2 decrypt_multi2 crypt_rc2 decrypt_rc2 crypt_rc5 
       decrypt_rc5 crypt_rc6 decrypt_rc6 gen_key gen_iv)) {
         $app->helper($method => \&{$method});
+      }
     }
 
-    map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } map { _lm($_) } @hash_algo;
-    map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^hmac.*/ ? $_ : () } _lm('Crypt::Mac::HMAC');
+    if ($args->{digest} || !%{$args}) {
+      for my $module (@{$loader->search('Crypt::Digest')}) {
+        my $e = $loader->load($module);
+        
+        if (ref $e) {
+          warn qq{Loading "$module" failed: $e} and next;
+        }
+
+        map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^sha|md5|md4|md2|ripemd|tiger|whirlpool.*/ ? $_ : () } _lm($module);
+
+      }
+    }
+
+    if ($args->{mac} || !%{$args}) {
+       for my $module (@{$loader->search('Crypt::Mac')}) {
+        my $e = $loader->load($module);
+        
+        if (ref $e) {
+          warn qq{Loading "$module" failed: $e} and next;
+        }
+
+        map { $app->helper( $_ => \&{$_} )} map { $_ ~~ /^hmac.*/ ? $_ : () } _lm($module);
+      
+      }
+    }
 
 }
 
-### Abstract for Crypt_* and Decrypt_* sub
 sub _crypt_x {
     my ($self, $algo, $content, $key) = @_;
     $key  = $self->gen_key("sha256") unless ($key);
@@ -97,11 +102,9 @@ sub gen_key {
     ($mode eq "sha256") ? sha256_hex(_prng(100, "alphanum")) : "NONE";
 }
 
-### generate intialization vector
 sub gen_iv {
     my ($self, $byte, $mode) = @_;
     ($mode eq "prng") ? _prng($byte, ""): "";
-    ### next time... i will improve stuff for key and iv features
 }
 
 sub _prng {
@@ -152,7 +155,7 @@ Mojolicious::Plugin::Crypto - Provide interface to some cryptographic stuff.
 
 =head1 SYNOPSIS
 
-  use Mojolicious::Plugin::Crypt;
+  use Mojolicious::Plugin::Crypto;
   
   my $fix_key = 'secretpassphrase';
   my $plain = "NemuxMojoCrypt";
@@ -480,7 +483,12 @@ Example: app->hmac_b64u('SHA256', $key, 'data buffer');
   #!/usr/bin/env perl
 
     use Mojolicious::Lite;
-    plugin 'Crypto';
+    
+    plugin 'Crypto', { 
+      symmetric_cipher => 1, # 0|1 -> enable or disable features avoiding to load unuseful modules
+      digest           => 1, # With no arguments it will load all features automatically 
+      mac              => 1
+    };
 
     my $bigsecret = "MyNameisMarcoRomano";
 

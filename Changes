@@ -36,7 +36,9 @@ Revision history for Perl extension Mojolicious::Plugin::Crypto.
 0.07 Sun Apr 13 20:00:00 2014
       - Add HMAC functions
 
+0.08 Wed Apr 30 19:31:00 2014
+     - ...dirty code
 
-
-
-      
+0.09 Sat May 10 23:40:00 2014
+     - input arguments added
+     - using Mojo::Loader to avoid using unuseful modules

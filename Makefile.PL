@@ -6,6 +6,7 @@ WriteMakefile(
     NAME              => 'Mojolicious::Plugin::Crypto',
     VERSION_FROM      => 'lib/Mojolicious/Plugin/Crypto.pm', # finds $VERSION
     PREREQ_PM         => {
+	'Mojolicious' => '4.99',
 	'Crypt::CBC'  => '2.33', 
 	'CryptX'      => '0.021'
     }, 

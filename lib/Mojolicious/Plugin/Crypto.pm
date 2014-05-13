@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-    $Mojolicious::Plugin::Crypto::VERSION = '0.09';
+    $Mojolicious::Plugin::Crypto::VERSION = '0.10';
 }
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::Util;

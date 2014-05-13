@@ -42,3 +42,6 @@ Revision history for Perl extension Mojolicious::Plugin::Crypto.
 0.09 Sat May 10 23:40:00 2014
      - input arguments added
      - using Mojo::Loader to avoid using unuseful modules
+
+0.10 Mon May 12 01:01:00 2014
+     - Fix - cpan testers

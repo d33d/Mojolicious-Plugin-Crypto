@@ -1,6 +1,6 @@
 use Mojo::Base -strict;
 
-use Test::More tests => 34;
+use Test::More tests => 32;
 use Test::Mojo;
 use Mojo::URL;
 
@@ -51,11 +51,11 @@ my ($clean_3des) =  $t->app->decrypt_3des($crypted, $blow_key);
 ok($blow_plain eq $clean_3des, "3DES ENC/DEC expected $blow_plain i got $clean_3des");
 
 ## IDEA test
-$blow_plain = "All Glory to The Hypnotoad " . rndStr 42, 'a'..'z', 0..9;
-($crypted, $key)  = $t->app->crypt_idea($blow_plain, $blow_key);
-ok($key eq  $blow_key, "IDEA return KEY");
-my ($clean_idea) =  $t->app->decrypt_idea($crypted, $blow_key);
-ok($blow_plain eq $clean_idea, "IDEA ENC/DEC expected $blow_plain i got $clean_idea");
+#$blow_plain = "All Glory to The Hypnotoad " . rndStr 42, 'a'..'z', 0..9;
+#($crypted, $key)  = $t->app->crypt_idea($blow_plain, $blow_key);
+#ok($key eq  $blow_key, "IDEA return KEY");
+#my ($clean_idea) =  $t->app->decrypt_idea($crypted, $blow_key);
+#ok($blow_plain eq $clean_idea, "IDEA ENC/DEC expected $blow_plain i got $clean_idea");
 
 ## twofish test
 $blow_plain = "All Glory to The Hypnotoad ". rndStr 42, 'a'..'z', 0..9;
@@ -130,13 +130,13 @@ ok($blow_plain eq $clean_rc6, "rc6 ENC/DEC expected $blow_plain i got $clean_rc6
 ### SUPER CRYPTO FUNCTION :)
 my $super_plain = "Look mom i'm a cryptO programmer";
 my $super_secret = "LookMomStupidSecret";
-($crypted, $key)  = $t->app->crypt_xtea($t->app->crypt_twofish($t->app->crypt_idea($t->app->crypt_3des($t->app->crypt_blowfish($t->app->crypt_aes($super_plain,$super_secret))))));
+($crypted, $key)  = $t->app->crypt_xtea($t->app->crypt_twofish($t->app->crypt_3des($t->app->crypt_blowfish($t->app->crypt_aes($super_plain,$super_secret)))));
 ok($super_secret eq $key, "MULTI CRYPTO return KEY");
 
-my ($clean_super) = $t->app->decrypt_aes($t->app->decrypt_blowfish($t->app->decrypt_3des($t->app->decrypt_idea($t->app->decrypt_twofish($t->app->decrypt_xtea($crypted,$super_secret))))));
+my ($clean_super) = $t->app->decrypt_aes($t->app->decrypt_blowfish($t->app->decrypt_3des($t->app->decrypt_twofish($t->app->decrypt_xtea($crypted,$super_secret)))));
 ok($clean_super eq $super_plain, "MULTI CRYPTO ENC/DEC expected $super_plain i got $clean_super");
 
 
-done_testing(34);
+done_testing(32);
 
 

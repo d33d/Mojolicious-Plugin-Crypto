@@ -37,11 +37,14 @@ Revision history for Perl extension Mojolicious::Plugin::Crypto.
       - Add HMAC functions
 
 0.08 Wed Apr 30 19:31:00 2014
-     - ...dirty code
+      - ...dirty code
 
 0.09 Sat May 10 23:40:00 2014
-     - input arguments added
-     - using Mojo::Loader to avoid using unuseful modules
+      - input arguments added
+       - using Mojo::Loader to avoid using unuseful modules
 
 0.10 Mon May 12 01:01:00 2014
-     - Fix - cpan testers
+      - Fix - cpan testers
+
+0.11 Wed May 14 08:48:00 2014
+      - Fix - remove support for IDEA

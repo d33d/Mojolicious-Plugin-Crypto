@@ -1,6 +1,6 @@
 package Mojolicious::Plugin::Crypto;
 {
-    $Mojolicious::Plugin::Crypto::VERSION = '0.10';
+    $Mojolicious::Plugin::Crypto::VERSION = '0.11';
 }
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::Util;
@@ -10,10 +10,9 @@ use Crypt::PRNG;
 use Crypt::Cipher;
 
 our %symmetric_algo = (
-    'aes'        => 'Cipher::AES',
-    'blowfish'   => 'Cipher::Blowfish',
-    'des'        => 'Cipher::DES',
-    'idea'       => 'Crypt::IDEA',
+    'aes'        => 'Crypt::Cipher::AES',
+    'blowfish'   => 'Crypt::Cipher::Blowfish',
+    'des'        => 'Crypt::Cipher::DES',
     '3des'       => 'Crypt::Cipher::DES_EDE',
     'triple_des' => 'Crypt::Cipher::DES_EDE',
     'des_ede'    => 'Crypt::Cipher::DES_EDE',
@@ -44,8 +43,8 @@ sub register {
 
         foreach my $method (
             qw( _crypt_x _decrypt_x crypt_aes decrypt_aes crypt_blowfish decrypt_blowfish crypt_des decrypt_des
-            crypt_idea decrypt_idea crypt_3des decrypt_3des crypt_twofish decrypt_twofish crypt_xtea decrypt_xtea
-            crypt_anubis decrypt_anubis crypt_camellia decrypt_camellia crypt_kasumi decrypt_kasumi crypt_khazad
+            crypt_3des decrypt_3des crypt_twofish decrypt_twofish crypt_xtea decrypt_xtea crypt_anubis 
+            decrypt_anubis crypt_camellia decrypt_camellia crypt_kasumi decrypt_kasumi crypt_khazad
             decrypt_khazad crypt_noekeon decrypt_noekeon crypt_multi2 decrypt_multi2 crypt_rc2 decrypt_rc2 crypt_rc5
             decrypt_rc5 crypt_rc6 decrypt_rc6 gen_key gen_iv)
           )
@@ -207,7 +206,7 @@ Mojolicious::Plugin::Crypto - Provide interface to some cryptographic stuff.
 
 =item * 
 
-Symmetric cipher algorithms using cipher-block chaining. AES, Blowfish, DES, 3DES, IDEA... and more, see below.
+Symmetric cipher algorithms using cipher-block chaining. AES, Blowfish, DES, 3DES and more, see below.
 
 =item *
 
@@ -240,10 +239,6 @@ B<DES>
 =item * 
 
 B<DES_EDE (aka Triple-DES, 3DES)>
-
-=item * 
-
-B<IDEA>
 
 =item * 
 
@@ -311,7 +306,6 @@ crypt_aes()
 crypt_blowfish()
 crypt_des()
 crypt_3des() [|| crypt_des_ede() || crypt_triple_des()]
-crypt_idea()
 crypt_twofish()
 crypt_xtea();
 crypt_anubis();
@@ -354,7 +348,7 @@ B<Crypt>
 
 =back 
 
-($crypted, $key) = app->crypt_xtea(app->crypt_twofish(app->crypt_idea(app->crypt_3des(app->crypt_blowfish(app->crypt_aes($super_plain,$super_secret))))));
+($crypted, $key) = app->crypt_xtea(app->crypt_twofish(app->crypt_3des(app->crypt_blowfish(app->crypt_aes($super_plain,$super_secret)))));
 
 =over 4
 
@@ -364,7 +358,7 @@ B<Decrypt>
 
 =back
 
-($plain, $key) = app->decrypt_aes(app->decrypt_blowfish(app->decrypt_3des(app->decrypt_idea(app->decrypt_twofish(app->decrypt_xtea($crypted,$super_secret))))));
+($plain, $key) = app->decrypt_aes(app->decrypt_blowfish(app->decrypt_3des(app->decrypt_twofish(app->decrypt_xtea($crypted,$super_secret)))));
 
 =head1 Hash/Digest Functions
 

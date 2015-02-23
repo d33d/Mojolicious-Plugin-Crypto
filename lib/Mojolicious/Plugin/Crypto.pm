@@ -1,13 +1,15 @@
 package Mojolicious::Plugin::Crypto;
 {
-    $Mojolicious::Plugin::Crypto::VERSION = '0.11';
+    $Mojolicious::Plugin::Crypto::VERSION = '0.14';
 }
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::Util;
-use Mojo::Loader;
+use Mojo::Loader qw(load_class find_modules);
 use Crypt::CBC;
 use Crypt::PRNG;
 use Crypt::Cipher;
+
+no if $] >= 5.018, warnings => "experimental::smartmatch";
 
 our %symmetric_algo = (
     'aes'        => 'Crypt::Cipher::AES',
@@ -33,11 +35,9 @@ sub register {
     my ( $self, $app, $args ) = @_;
     $args ||= {};
 
-    my $loader = Mojo::Loader->new;
-
     if ( $args->{symmetric_cipher} || !%{$args} ) {
-        for my $module ( @{ $loader->search('Crypt::Cipher') } ) {
-            my $e = $loader->load($module);
+        for my $module ( find_modules 'Crypt::Cipher' ) {
+            my $e = load_class $module;
             warn qq{Loading "$module" failed: $e} and next if ref $e;
         }
 
@@ -54,8 +54,8 @@ sub register {
     }
 
     if ( $args->{digest} || !%{$args} ) {
-        for my $module ( @{ $loader->search('Crypt::Digest') } ) {
-            my $e = $loader->load($module);
+        for my $module ( find_modules 'Crypt::Digest' ) {
+            my $e = load_class $module;
 
             if ( ref $e ) {
                 warn qq{Loading "$module" failed: $e} and next;
@@ -71,8 +71,8 @@ sub register {
     }
 
     if ( $args->{mac} || !%{$args} ) {
-        for my $module ( @{ $loader->search('Crypt::Mac') } ) {
-            my $e = $loader->load($module);
+        for my $module ( find_modules 'Crypt::Mac' ) {
+            my $e = load_class $module;
 
             if ( ref $e ) {
                 warn qq{Loading "$module" failed: $e} and next;

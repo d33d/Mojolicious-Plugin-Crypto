@@ -21,6 +21,13 @@ my $hmac_key  = "SECRETOK";
 
 # /hmac/sha256?data=nemux
 
+any '/foo/:param1/:param2/bar' => sub {
+    my $self = shift;
+    my $param1 = $self->param('param1');
+    my $param2 = $self->param('param2');
+    $self->render(inline => $param1, $param2);
+};
+
 get '/hmac/sha256' => sub {
   my $self = shift;
   my $data = $self->param('data');
